@@ -11,7 +11,7 @@ import { UsersService } from '../users/users.service.js';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { RefreshTokensRepository } from './repositories/refresh-tokens.repository.js';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 @Injectable()
 export class AuthService {
@@ -104,6 +104,7 @@ export class AuthService {
       {
         sub: userId,
         tokenType: 'refresh',
+        jti: randomUUID(),
       },
       {
         secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
