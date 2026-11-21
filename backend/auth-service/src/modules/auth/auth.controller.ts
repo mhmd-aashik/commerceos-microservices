@@ -1,17 +1,19 @@
 import { ConflictException, Controller } from '@nestjs/common';
 import { status } from '@grpc/grpc-js';
 import { GrpcMethod, RpcException } from '@nestjs/microservices';
-import { UsersService } from '../users/users.service.js';
-import { RegisterUserDto } from '../users/dto/register-user.dto.js';
+
+import { AuthService } from './auth.service.js';
+import { RegisterUserDto } from './dto/register-user.dto.js';
+import { LoginUserDto } from './dto/login-user.dto.js';
 
 @Controller()
 export class AuthController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly authService: AuthService) {}
 
   @GrpcMethod('AuthService', 'RegisterUser')
   async registerUser(data: RegisterUserDto) {
     try {
-      const user = await this.usersService.register(
+      const user = await this.authService.register(
         data.email,
         data.password,
         data.name,
@@ -31,5 +33,10 @@ export class AuthController {
 
       throw error;
     }
+  }
+
+  @GrpcMethod('AuthService', 'LoginUser')
+  async loginUser(data: LoginUserDto) {
+    return this.authService.login(data.email, data.password);
   }
 }
