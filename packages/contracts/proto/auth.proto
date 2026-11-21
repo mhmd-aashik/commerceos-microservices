@@ -5,6 +5,8 @@ package auth;
 service AuthService {
   rpc ValidateUser (ValidateUserRequest)
       returns (ValidateUserResponse);
+
+  rpc RegisterUser (RegisterUserRequest) returns (RegisterUserResponse);
 }
 
 message ValidateUserRequest {
@@ -13,4 +15,18 @@ message ValidateUserRequest {
 
 message ValidateUserResponse {
   bool valid = 1;
+}
+
+message RegisterUserRequest {
+  string email = 1;
+  string password = 2;
+  string name = 3;
+}
+
+message RegisterUserResponse {
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  bool isActive = 4;
+  string createdAt = 5;
 }
