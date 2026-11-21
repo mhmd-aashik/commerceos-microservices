@@ -41,4 +41,5 @@ export interface LoginUserResponse {
   name: string;
   isActive: boolean;
   accessToken: string;
+  refreshToken: string;
 }
