@@ -12,6 +12,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
       isGlobal: true,
       envFilePath: '.env',
     }),
+
     DatabaseModule,
     UsersModule,
     AuthModule,

@@ -4,10 +4,14 @@ import { status } from '@grpc/grpc-js';
 import * as argon2 from 'argon2';
 import { Prisma } from '../../generated/prisma/client.js';
 import { UsersService } from '../users/users.service.js';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   async register(email: string, password: string, name: string) {
     const normalizedEmail = email.trim().toLowerCase();
@@ -69,11 +73,20 @@ export class AuthService {
       });
     }
 
+    const accessToken = await this.generateAccessToken(user.id);
+
     return {
       id: user.id,
       email: user.email,
       name: user.name,
       isActive: user.isActive,
+      accessToken,
     };
+  }
+
+  async generateAccessToken(userId: string): Promise<string> {
+    return this.jwtService.signAsync({
+      sub: userId,
+    });
   }
 }

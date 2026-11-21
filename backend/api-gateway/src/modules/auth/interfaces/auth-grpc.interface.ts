@@ -40,4 +40,5 @@ export interface LoginUserResponse {
   email: string;
   name: string;
   isActive: boolean;
+  accessToken: string;
 }
