@@ -1,4 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { status } from '@grpc/grpc-js';
 import * as argon2 from 'argon2';
@@ -6,6 +10,8 @@ import { Prisma } from '../../generated/prisma/client.js';
 import { UsersService } from '../users/users.service.js';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { RefreshTokensRepository } from './repositories/refresh-tokens.repository.js';
+import { createHash } from 'node:crypto';
 
 @Injectable()
 export class AuthService {
@@ -13,6 +19,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly refreshTokensRepository: RefreshTokensRepository,
   ) {}
 
   async register(email: string, password: string, name: string) {
@@ -80,6 +87,8 @@ export class AuthService {
       this.generateRefreshToken(user.id),
     ]);
 
+    await this.storeRefreshToken(user.id, refreshToken);
+
     return {
       id: user.id,
       email: user.email,
@@ -104,9 +113,82 @@ export class AuthService {
     );
   }
 
+  async refreshTokens(refreshToken: string) {
+    let payload: {
+      sub: string;
+      tokenType: string;
+      jti: string;
+      exp: number;
+    };
+
+    try {
+      payload = await this.jwtService.verifyAsync(refreshToken, {
+        secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
+        algorithms: ['HS256'],
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    if (
+      !payload.sub ||
+      payload.tokenType !== 'refresh' ||
+      !payload.jti ||
+      typeof payload.exp !== 'number'
+    ) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const user = await this.usersService.findById(payload.sub);
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const newRefreshToken = await this.generateRefreshToken(user.id);
+
+    const newPayload = this.jwtService.decode(newRefreshToken) as {
+      exp: number;
+    };
+
+    const rotated = await this.refreshTokensRepository.rotate({
+      oldTokenHash: this.hashRefreshToken(refreshToken),
+      userId: user.id,
+      newTokenHash: this.hashRefreshToken(newRefreshToken),
+      expiresAt: new Date(newPayload.exp * 1000),
+    });
+
+    if (!rotated) {
+      throw new UnauthorizedException('Refresh token expired or already used');
+    }
+
+    const accessToken = await this.generateAccessToken(user.id);
+
+    return {
+      accessToken,
+      refreshToken: newRefreshToken,
+    };
+  }
+
+  async storeRefreshToken(userId: string, refreshToken: string): Promise<void> {
+    const tokenHash = this.hashRefreshToken(refreshToken);
+
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await this.refreshTokensRepository.create({
+      userId,
+      tokenHash,
+      expiresAt,
+    });
+  }
+
   async generateAccessToken(userId: string): Promise<string> {
     return this.jwtService.signAsync({
       sub: userId,
     });
+  }
+
+  private hashRefreshToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
   }
 }
