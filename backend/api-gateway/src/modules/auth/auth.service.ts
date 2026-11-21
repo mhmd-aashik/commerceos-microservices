@@ -1,7 +1,10 @@
 import {
+  BadRequestException,
+  ConflictException,
   GatewayTimeoutException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   OnModuleInit,
   ServiceUnavailableException,
 } from '@nestjs/common';
@@ -15,7 +18,20 @@ import {
 } from 'rxjs';
 import { status as grpcStatus } from '@grpc/grpc-js';
 
-import { AuthGrpcService } from './interfaces/auth-grpc.interface.js';
+import {
+  AuthGrpcService,
+  RegisterUserRequest,
+  RegisterUserResponse,
+} from './interfaces/auth-grpc.interface.js';
+
+function isGrpcError(error: unknown): error is { code: number } {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof error.code === 'number'
+  );
+}
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -64,5 +80,33 @@ export class AuthService implements OnModuleInit {
     );
 
     return response.valid;
+  }
+
+  async register(data: RegisterUserRequest): Promise<RegisterUserResponse> {
+    try {
+      return await firstValueFrom(
+        this.authGrpcService.registerUser(data).pipe(timeout(3000)),
+      );
+    } catch (error) {
+      if (error instanceof TimeoutError) {
+        throw new GatewayTimeoutException('Auth Service request timed out');
+      }
+
+      if (isGrpcError(error)) {
+        if (error.code === grpcStatus.ALREADY_EXISTS) {
+          throw new ConflictException('Email already registered');
+        }
+
+        if (error.code === grpcStatus.UNAVAILABLE) {
+          throw new ServiceUnavailableException('Auth Service is unavailable');
+        }
+
+        if (error.code === grpcStatus.INVALID_ARGUMENT) {
+          throw new BadRequestException('Invalid registration data');
+        }
+      }
+
+      throw new InternalServerErrorException('Registration failed');
+    }
   }
 }
