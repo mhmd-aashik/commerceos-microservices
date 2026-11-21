@@ -4,6 +4,7 @@ import { AppService } from './app.service.js';
 import { DatabaseModule } from './database/database.module.js';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './modules/users/users.module.js';
+import { AuthModule } from './modules/auth/auth.module.js';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { UsersModule } from './modules/users/users.module.js';
     }),
     DatabaseModule,
     UsersModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
