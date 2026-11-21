@@ -15,8 +15,12 @@ import { AuthController } from './auth.controller.js';
         inject: [ConfigService],
 
         useFactory: (config: ConfigService) => {
-          const host = config.getOrThrow<string>('grpc.auth.host');
-          const port = config.getOrThrow<number>('grpc.auth.port');
+          const host = config.getOrThrow<string>('grpc.auth.host', {
+            infer: true,
+          });
+          const port = config.getOrThrow<number>('grpc.auth.port', {
+            infer: true,
+          });
 
           return {
             transport: Transport.GRPC,
