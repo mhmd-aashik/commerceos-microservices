@@ -23,6 +23,8 @@ import {
   AuthGrpcService,
   LoginUserRequest,
   LoginUserResponse,
+  RefreshTokensRequest,
+  RefreshTokensResponse,
   RegisterUserRequest,
   RegisterUserResponse,
 } from './interfaces/auth-grpc.interface.js';
@@ -138,6 +140,36 @@ export class AuthService implements OnModuleInit {
       }
 
       throw new InternalServerErrorException('Login failed');
+    }
+  }
+
+  async refreshTokens(
+    data: RefreshTokensRequest,
+  ): Promise<RefreshTokensResponse> {
+    try {
+      return await firstValueFrom(
+        this.authGrpcService.refreshTokens(data).pipe(timeout(3000)),
+      );
+    } catch (error: unknown) {
+      if (error instanceof TimeoutError) {
+        throw new GatewayTimeoutException('Auth Service request timed out');
+      }
+
+      if (isGrpcError(error)) {
+        if (error.code === grpcStatus.UNAUTHENTICATED) {
+          throw new UnauthorizedException('Invalid or expired refresh token');
+        }
+
+        if (error.code === grpcStatus.INVALID_ARGUMENT) {
+          throw new BadRequestException('Invalid refresh request');
+        }
+
+        if (error.code === grpcStatus.UNAVAILABLE) {
+          throw new ServiceUnavailableException('Auth Service is unavailable');
+        }
+      }
+
+      throw new InternalServerErrorException('Token refresh failed');
     }
   }
 }

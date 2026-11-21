@@ -9,6 +9,8 @@ service AuthService {
   rpc RegisterUser (RegisterUserRequest) returns (RegisterUserResponse);
 
   rpc LoginUser (LoginUserRequest) returns (LoginUserResponse);
+
+  rpc RefreshTokens (RefreshTokensRequest) returns (RefreshTokensResponse);
 }
 
 message ValidateUserRequest {
@@ -46,4 +48,14 @@ message LoginUserResponse {
   bool isActive = 4;
   string accessToken = 5;
   string refreshToken = 6;
+}
+
+
+message RefreshTokensRequest {
+  string refreshToken = 1;
+}
+
+message RefreshTokensResponse {
+  string accessToken = 1;
+  string refreshToken = 2;
 }

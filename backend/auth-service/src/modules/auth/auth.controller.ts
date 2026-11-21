@@ -1,4 +1,8 @@
-import { ConflictException, Controller } from '@nestjs/common';
+import {
+  ConflictException,
+  Controller,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { status } from '@grpc/grpc-js';
 import { GrpcMethod, RpcException } from '@nestjs/microservices';
 
@@ -38,5 +42,21 @@ export class AuthController {
   @GrpcMethod('AuthService', 'LoginUser')
   async loginUser(data: LoginUserDto) {
     return this.authService.login(data.email, data.password);
+  }
+
+  @GrpcMethod('AuthService', 'RefreshTokens')
+  async refreshTokens(data: { refreshToken: string }) {
+    try {
+      return await this.authService.refreshTokens(data.refreshToken);
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw new RpcException({
+          code: status.UNAUTHENTICATED,
+          message: 'Invalid or expired refresh token',
+        });
+      }
+
+      throw error;
+    }
   }
 }

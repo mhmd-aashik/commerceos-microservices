@@ -5,6 +5,7 @@ import { AuthService } from './auth.service.js';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { RefreshTokensRepository } from './repositories/refresh-tokens.repository.js';
+import { DatabaseModule } from '../../database/database.module.js';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { RefreshTokensRepository } from './repositories/refresh-tokens.repositor
         },
       }),
     }),
+    DatabaseModule,
     UsersModule,
   ],
   controllers: [AuthController],

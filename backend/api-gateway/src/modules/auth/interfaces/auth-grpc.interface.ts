@@ -6,6 +6,8 @@ export interface AuthGrpcService {
   registerUser(data: RegisterUserRequest): Observable<RegisterUserResponse>;
 
   loginUser(data: LoginUserRequest): Observable<LoginUserResponse>;
+
+  refreshTokens(data: RefreshTokensRequest): Observable<RefreshTokensResponse>;
 }
 
 export interface ValidateUserRequest {
@@ -40,6 +42,15 @@ export interface LoginUserResponse {
   email: string;
   name: string;
   isActive: boolean;
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface RefreshTokensRequest {
+  refreshToken: string;
+}
+
+export interface RefreshTokensResponse {
   accessToken: string;
   refreshToken: string;
 }
