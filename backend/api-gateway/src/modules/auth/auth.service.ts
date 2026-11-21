@@ -7,6 +7,7 @@ import {
   InternalServerErrorException,
   OnModuleInit,
   ServiceUnavailableException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import type { ClientGrpc } from '@nestjs/microservices';
 import {
@@ -20,6 +21,8 @@ import { status as grpcStatus } from '@grpc/grpc-js';
 
 import {
   AuthGrpcService,
+  LoginUserRequest,
+  LoginUserResponse,
   RegisterUserRequest,
   RegisterUserResponse,
 } from './interfaces/auth-grpc.interface.js';
@@ -107,6 +110,34 @@ export class AuthService implements OnModuleInit {
       }
 
       throw new InternalServerErrorException('Registration failed');
+    }
+  }
+
+  async login(data: LoginUserRequest): Promise<LoginUserResponse> {
+    try {
+      return await firstValueFrom(
+        this.authGrpcService.loginUser(data).pipe(timeout(3000)),
+      );
+    } catch (error: unknown) {
+      if (error instanceof TimeoutError) {
+        throw new GatewayTimeoutException('Auth Service request timed out');
+      }
+
+      if (isGrpcError(error)) {
+        if (error.code === grpcStatus.UNAUTHENTICATED) {
+          throw new UnauthorizedException('Invalid credentials');
+        }
+
+        if (error.code === grpcStatus.INVALID_ARGUMENT) {
+          throw new BadRequestException('Invalid login data');
+        }
+
+        if (error.code === grpcStatus.UNAVAILABLE) {
+          throw new ServiceUnavailableException('Auth Service is unavailable');
+        }
+      }
+
+      throw new InternalServerErrorException('Login failed');
     }
   }
 }

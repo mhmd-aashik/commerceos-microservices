@@ -4,6 +4,8 @@ export interface AuthGrpcService {
   validateUser(request: ValidateUserRequest): Observable<ValidateUserResponse>;
 
   registerUser(data: RegisterUserRequest): Observable<RegisterUserResponse>;
+
+  loginUser(data: LoginUserRequest): Observable<LoginUserResponse>;
 }
 
 export interface ValidateUserRequest {
@@ -26,4 +28,16 @@ export interface RegisterUserResponse {
   name: string;
   isActive: boolean;
   createdAt: string;
+}
+
+export interface LoginUserRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginUserResponse {
+  id: string;
+  email: string;
+  name: string;
+  isActive: boolean;
 }
