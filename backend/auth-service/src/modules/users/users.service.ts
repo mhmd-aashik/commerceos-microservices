@@ -44,4 +44,11 @@ export class UsersService {
   async findById(id: string) {
     return this.usersRepository.findById(id);
   }
+
+  async verifyPassword(
+    passwordHash: string,
+    plainPassword: string,
+  ): Promise<boolean> {
+    return argon2.verify(passwordHash, plainPassword);
+  }
 }
