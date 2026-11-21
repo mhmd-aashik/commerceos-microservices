@@ -1,21 +1,15 @@
-import { Controller } from '@nestjs/common';
-import { GrpcMethod, RpcException } from '@nestjs/microservices';
+import { ConflictException, Controller } from '@nestjs/common';
 import { status } from '@grpc/grpc-js';
-import { ConflictException } from '@nestjs/common';
+import { GrpcMethod, RpcException } from '@nestjs/microservices';
 import { UsersService } from '../users/users.service.js';
-
-interface RegisterUserRequest {
-  email: string;
-  password: string;
-  name: string;
-}
+import { RegisterUserDto } from '../users/dto/register-user.dto.js';
 
 @Controller()
 export class AuthController {
   constructor(private readonly usersService: UsersService) {}
 
   @GrpcMethod('AuthService', 'RegisterUser')
-  async registerUser(data: RegisterUserRequest) {
+  async registerUser(data: RegisterUserDto) {
     try {
       const user = await this.usersService.register(
         data.email,
