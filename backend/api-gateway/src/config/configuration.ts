@@ -1,8 +1,11 @@
-export default () => ({
+import type { AppConfig } from './configuration.types.js';
+
+const configuration = (): AppConfig => ({
   app: {
     port: Number(process.env.PORT ?? 3000),
     environment: process.env.NODE_ENV ?? 'development',
   },
+
   grpc: {
     auth: {
       host: process.env.AUTH_GRPC_HOST ?? 'localhost',
@@ -10,3 +13,5 @@ export default () => ({
     },
   },
 });
+
+export default configuration;
