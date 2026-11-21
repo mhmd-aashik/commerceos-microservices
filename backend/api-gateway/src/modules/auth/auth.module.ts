@@ -13,17 +13,23 @@ import { AuthController } from './auth.controller.js';
         name: 'AUTH_SERVICE',
         imports: [ConfigModule],
         inject: [ConfigService],
-        useFactory: (config: ConfigService) => ({
-          transport: Transport.GRPC,
-          options: {
-            package: 'auth',
-            protoPath: join(
-              process.cwd(),
-              '../../packages/contracts/proto/auth.proto',
-            ),
-            url: `${config.getOrThrow<string>('AUTH_GRPC_HOST')}:${config.getOrThrow<string>('AUTH_GRPC_PORT')}`,
-          },
-        }),
+
+        useFactory: (config: ConfigService) => {
+          const host = config.getOrThrow<string>('grpc.auth.host');
+          const port = config.getOrThrow<number>('grpc.auth.port');
+
+          return {
+            transport: Transport.GRPC,
+            options: {
+              package: 'auth',
+              protoPath: join(
+                process.cwd(),
+                '../../packages/contracts/proto/auth.proto',
+              ),
+              url: `${host}:${port}`,
+            },
+          };
+        },
       },
     ]),
   ],
