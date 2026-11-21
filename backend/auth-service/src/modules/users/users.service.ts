@@ -40,4 +40,8 @@ export class UsersService {
       createdAt: user.createdAt,
     };
   }
+
+  async findById(id: string) {
+    return this.usersRepository.findById(id);
+  }
 }
