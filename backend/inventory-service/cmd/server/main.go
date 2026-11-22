@@ -2,12 +2,28 @@ package main
 
 import (
 	"log"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+
+	"github.com/mhmd-aashik/commerceos/inventory-service/internal/config"
+	"github.com/mhmd-aashik/commerceos/inventory-service/internal/handler"
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found; using process environment")
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal("Configuration error: ", err)
+	}
+
+	if cfg.AppEnv == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	router := gin.New()
 
 	router.Use(
@@ -15,16 +31,16 @@ func main() {
 		gin.Recovery(),
 	)
 
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"service": "inventory-service",
-			"status":  "ok",
-		})
-	})
+	healthHandler := handler.NewHealthHandler()
 
-	log.Println("Inventory HTTP server starting on :8081")
+	router.GET("/health", healthHandler.Check)
 
-	if err := router.Run(":8080"); err != nil {
-		log.Fatal(err)
+	log.Printf(
+		"Inventory HTTP server starting on port %s",
+		cfg.HTTPPort,
+	)
+
+	if err := router.Run(":" + cfg.HTTPPort); err != nil {
+		log.Fatal("HTTP server failed: ", err)
 	}
 }
