@@ -23,6 +23,8 @@ import {
   AuthGrpcService,
   LoginUserRequest,
   LoginUserResponse,
+  LogoutRequest,
+  LogoutResponse,
   RefreshTokensRequest,
   RefreshTokensResponse,
   RegisterUserRequest,
@@ -170,6 +172,30 @@ export class AuthService implements OnModuleInit {
       }
 
       throw new InternalServerErrorException('Token refresh failed');
+    }
+  }
+
+  async logout(data: LogoutRequest): Promise<LogoutResponse> {
+    try {
+      return await firstValueFrom(
+        this.authGrpcService.logout(data).pipe(timeout(3000)),
+      );
+    } catch (error: unknown) {
+      if (error instanceof TimeoutError) {
+        throw new GatewayTimeoutException('Auth Service request timed out');
+      }
+
+      if (isGrpcError(error)) {
+        if (error.code === grpcStatus.UNAUTHENTICATED) {
+          throw new UnauthorizedException('Invalid refresh token');
+        }
+
+        if (error.code === grpcStatus.UNAVAILABLE) {
+          throw new ServiceUnavailableException('Auth Service is unavailable');
+        }
+      }
+
+      throw new InternalServerErrorException('Logout failed');
     }
   }
 }

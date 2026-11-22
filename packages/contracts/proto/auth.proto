@@ -11,6 +11,8 @@ service AuthService {
   rpc LoginUser (LoginUserRequest) returns (LoginUserResponse);
 
   rpc RefreshTokens (RefreshTokensRequest) returns (RefreshTokensResponse);
+
+  rpc Logout (LogoutRequest) returns (LogoutResponse);
 }
 
 message ValidateUserRequest {
@@ -58,4 +60,13 @@ message RefreshTokensRequest {
 message RefreshTokensResponse {
   string accessToken = 1;
   string refreshToken = 2;
+}
+
+
+message LogoutRequest {
+  string refreshToken = 1;
+}
+
+message LogoutResponse {
+  bool success = 1;
 }

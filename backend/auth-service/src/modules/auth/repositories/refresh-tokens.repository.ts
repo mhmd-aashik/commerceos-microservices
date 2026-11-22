@@ -64,4 +64,19 @@ export class RefreshTokensRepository {
       throw error;
     }
   }
+
+  async revoke(userId: string, tokenHash: string): Promise<boolean> {
+    const result = await this.prisma.refreshToken.updateMany({
+      where: {
+        userId,
+        tokenHash,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+
+    return result.count === 1;
+  }
 }

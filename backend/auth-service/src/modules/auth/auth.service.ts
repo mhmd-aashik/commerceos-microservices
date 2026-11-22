@@ -192,4 +192,35 @@ export class AuthService {
   private hashRefreshToken(token: string): string {
     return createHash('sha256').update(token).digest('hex');
   }
+
+  async logout(refreshToken: string): Promise<{ success: boolean }> {
+    let payload: {
+      sub: string;
+      tokenType: string;
+      jti: string;
+    };
+
+    try {
+      payload = await this.jwtService.verifyAsync(refreshToken, {
+        secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
+        algorithms: ['HS256'],
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    if (
+      typeof payload.sub !== 'string' ||
+      payload.tokenType !== 'refresh' ||
+      typeof payload.jti !== 'string'
+    ) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const tokenHash = this.hashRefreshToken(refreshToken);
+
+    await this.refreshTokensRepository.revoke(payload.sub, tokenHash);
+
+    return { success: true };
+  }
 }

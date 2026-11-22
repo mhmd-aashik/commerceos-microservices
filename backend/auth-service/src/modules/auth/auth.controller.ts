@@ -59,4 +59,20 @@ export class AuthController {
       throw error;
     }
   }
+
+  @GrpcMethod('AuthService', 'Logout')
+  async logout(data: { refreshToken: string }) {
+    try {
+      return await this.authService.logout(data.refreshToken);
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw new RpcException({
+          code: status.UNAUTHENTICATED,
+          message: 'Invalid refresh token',
+        });
+      }
+
+      throw error;
+    }
+  }
 }
