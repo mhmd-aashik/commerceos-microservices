@@ -33,12 +33,18 @@ export class JwtAuthGuard implements CanActivate {
         algorithms: ['HS256'],
       });
 
-      if (typeof payload.sub !== 'string' || !payload.sub) {
+      if (
+        typeof payload.sub !== 'string' ||
+        !payload.sub ||
+        payload.tokenType !== 'access' ||
+        !['CUSTOMER', 'ADMIN'].includes(payload.role)
+      ) {
         throw new UnauthorizedException('Invalid token payload');
       }
 
       request.user = {
         userId: payload.sub,
+        role: payload.role,
       };
 
       return true;

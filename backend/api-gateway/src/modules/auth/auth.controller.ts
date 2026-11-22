@@ -13,6 +13,8 @@ import { LoginDto } from './dto/login.dto.js';
 import { RefreshTokenDto } from './dto/refresh-token.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import type { Request } from 'express';
+import { Roles } from './decorators/roles.decorator.js';
+import { RolesGuard } from './guards/roles.guard.js';
 
 @Controller('auth')
 export class AuthController {
@@ -54,6 +56,24 @@ export class AuthController {
     return {
       userId: request.user!.userId,
       message: 'Authenticated successfully',
+    };
+  }
+
+  @Get('customer')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('CUSTOMER', 'ADMIN')
+  getCustomerDashboard() {
+    return {
+      message: 'Customer dashboard',
+    };
+  }
+
+  @Get('admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  getAdminDashboard() {
+    return {
+      message: 'Admin dashboard',
     };
   }
 }

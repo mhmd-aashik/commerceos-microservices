@@ -83,7 +83,7 @@ export class AuthService {
     }
 
     const [accessToken, refreshToken] = await Promise.all([
-      this.generateAccessToken(user.id),
+      this.generateAccessToken(user.id, user.role),
       this.generateRefreshToken(user.id),
     ]);
 
@@ -163,7 +163,7 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token expired or already used');
     }
 
-    const accessToken = await this.generateAccessToken(user.id);
+    const accessToken = await this.generateAccessToken(user.id, user.role);
 
     return {
       accessToken,
@@ -183,9 +183,14 @@ export class AuthService {
     });
   }
 
-  async generateAccessToken(userId: string): Promise<string> {
+  async generateAccessToken(
+    userId: string,
+    role: 'CUSTOMER' | 'ADMIN',
+  ): Promise<string> {
     return this.jwtService.signAsync({
       sub: userId,
+      role,
+      tokenType: 'access',
     });
   }
 

@@ -24,6 +24,8 @@ model User {
 
   refreshTokens RefreshToken[]
 
+  role Role @default(CUSTOMER)
+
   @@map("users")
 }
 
@@ -41,4 +43,10 @@ model RefreshToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+
+enum Role {
+  CUSTOMER
+  ADMIN
 }
