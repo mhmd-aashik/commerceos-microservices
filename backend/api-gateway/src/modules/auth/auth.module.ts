@@ -5,6 +5,7 @@ import { join } from 'node:path';
 
 import { AuthService } from './auth.service.js';
 import { AuthController } from './auth.controller.js';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { AuthController } from './auth.controller.js';
         },
       },
     ]),
+    JwtModule.register({}),
   ],
   controllers: [AuthController],
   providers: [AuthService],
