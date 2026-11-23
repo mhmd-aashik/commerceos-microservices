@@ -99,8 +99,53 @@ export class InventoryRepository {
 
   async reserveStock(productId: string, orderId: string, quantity: number) {
     return this.database.db.transaction(async (tx) => {
-      // 1. Atomically update available and reserved stock
+      // Serialize reservation attempts for this product.
       const [stock] = await tx
+        .select()
+        .from(inventory)
+        .where(eq(inventory.productId, productId))
+        .for('update');
+
+      if (!stock) {
+        throw new ConflictException('Inventory not found');
+      }
+
+      // Check for an existing reservation under the lock.
+      const [existing] = await tx
+        .select()
+        .from(inventoryReservations)
+        .where(
+          and(
+            eq(inventoryReservations.orderId, orderId),
+            eq(inventoryReservations.inventoryId, stock.id),
+          ),
+        )
+        .limit(1);
+
+      if (existing) {
+        if (existing.quantity !== quantity) {
+          throw new ConflictException(
+            'Reservation already exists with a different quantity',
+          );
+        }
+
+        // No stock changes on retry.
+        return {
+          reservationId: existing.id,
+          productId,
+          orderId,
+          quantity: existing.quantity,
+          availableQuantity: stock.availableQuantity,
+          reservedQuantity: stock.reservedQuantity,
+          status: existing.status,
+        };
+      }
+
+      if (stock.availableQuantity < quantity) {
+        throw new ConflictException('Insufficient stock');
+      }
+
+      const [updatedStock] = await tx
         .update(inventory)
         .set({
           availableQuantity: sql`
@@ -113,17 +158,16 @@ export class InventoryRepository {
         })
         .where(
           and(
-            eq(inventory.productId, productId),
+            eq(inventory.id, stock.id),
             sql`${inventory.availableQuantity} >= ${quantity}`,
           ),
         )
         .returning();
 
-      if (!stock) {
-        throw new ConflictException('Product not found or insufficient stock');
+      if (!updatedStock) {
+        throw new ConflictException('Insufficient stock');
       }
 
-      // 2. Create the reservation in the SAME transaction
       const [reservation] = await tx
         .insert(inventoryReservations)
         .values({
@@ -136,11 +180,11 @@ export class InventoryRepository {
 
       return {
         reservationId: reservation.id,
-        productId: stock.productId,
+        productId,
         orderId,
         quantity,
-        availableQuantity: stock.availableQuantity,
-        reservedQuantity: stock.reservedQuantity,
+        availableQuantity: updatedStock.availableQuantity,
+        reservedQuantity: updatedStock.reservedQuantity,
         status: reservation.status,
       };
     });
@@ -148,7 +192,7 @@ export class InventoryRepository {
 
   async releaseStock(reservationId: string) {
     return this.database.db.transaction(async (tx) => {
-      // Lock the reservation until this transaction finishes
+      // 1. Lock reservation row
       const [reservation] = await tx
         .select()
         .from(inventoryReservations)
@@ -159,13 +203,33 @@ export class InventoryRepository {
         throw new NotFoundException('Reservation not found');
       }
 
+      // 2. Already released: return success without changing stock
+      if (reservation.status === 'RELEASED') {
+        const [stock] = await tx
+          .select()
+          .from(inventory)
+          .where(eq(inventory.id, reservation.inventoryId));
+
+        if (!stock) {
+          throw new ConflictException('Inventory not found');
+        }
+
+        return {
+          reservationId,
+          status: 'RELEASED',
+          availableQuantity: stock.availableQuantity,
+          reservedQuantity: stock.reservedQuantity,
+        };
+      }
+
+      // 3. Confirmed reservations cannot be released
       if (reservation.status !== 'RESERVED') {
         throw new ConflictException(
           `Cannot release a ${reservation.status} reservation`,
         );
       }
 
-      // Return the reserved quantity to available stock
+      // 4. Return reserved quantity to available stock
       const [stock] = await tx
         .update(inventory)
         .set({
@@ -192,7 +256,7 @@ export class InventoryRepository {
         throw new ConflictException('Inventory stock is inconsistent');
       }
 
-      // Mark the reservation as released
+      // 5. Mark reservation as released
       await tx
         .update(inventoryReservations)
         .set({
