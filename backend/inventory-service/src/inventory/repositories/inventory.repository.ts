@@ -332,4 +332,30 @@ export class InventoryRepository {
       };
     });
   }
+
+  async initializeStock(productId: string, initialQuantity: number) {
+    const [created] = await this.database.db
+      .insert(inventory)
+      .values({
+        productId,
+        availableQuantity: initialQuantity,
+        reservedQuantity: 0,
+      })
+      .onConflictDoNothing({
+        target: inventory.productId,
+      })
+      .returning();
+
+    if (created) {
+      return created;
+    }
+
+    const existing = await this.findByProductId(productId);
+
+    if (!existing) {
+      throw new Error('Inventory initialization could not be completed');
+    }
+
+    return existing;
+  }
 }

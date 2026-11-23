@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 
 import { InventoryRepository } from './repositories/inventory.repository.js';
+import { isUUID } from 'class-validator';
 
 @Injectable()
 export class InventoryService {
@@ -64,4 +65,31 @@ export class InventoryService {
       throw new BadRequestException('A valid reservation ID is required');
     }
   }
+
+
+async initializeStock(
+ productId: string,
+ initialQuantity: number,
+) {
+ if (!isUUID(productId)) {
+   throw new BadRequestException(
+     'A valid product ID is required',
+   );
+ }
+
+ if (
+   !Number.isSafeInteger(initialQuantity) ||
+   initialQuantity < 0
+ ) {
+   throw new BadRequestException(
+     'Initial quantity must be a non-negative integer',
+   );
+ }
+
+ return this.inventoryRepository.initializeStock(
+   productId,
+   initialQuantity,
+ );
+}
+
 }

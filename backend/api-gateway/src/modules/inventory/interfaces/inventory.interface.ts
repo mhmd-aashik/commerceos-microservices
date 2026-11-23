@@ -33,4 +33,20 @@ export interface InventoryGrpcService {
   checkStock(request: CheckStockRequest): Observable<CheckStockResponse>;
 
   reserveStock(request: ReserveStockRequest): Observable<ReserveStockResponse>;
+
+  initializeStock(
+    request: InitializeStockRequest,
+  ): Observable<InitializeStockResponse>;
+}
+
+export interface InitializeStockRequest {
+  productId: string;
+  initialQuantity: number;
+}
+
+export interface InitializeStockResponse {
+  inventoryId: string;
+  productId: string;
+  availableQuantity: number;
+  reservedQuantity: number;
 }

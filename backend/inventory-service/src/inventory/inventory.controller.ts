@@ -80,4 +80,23 @@ export class InventoryGrpcController {
       this.handleError(error);
     }
   }
+
+  @GrpcMethod('InventoryService', 'InitializeStock')
+  async initializeStock(data: { productId: string; initialQuantity: number }) {
+    try {
+      const stock = await this.inventoryService.initializeStock(
+        data.productId,
+        data.initialQuantity,
+      );
+
+      return {
+        inventoryId: stock.id,
+        productId: stock.productId,
+        availableQuantity: stock.availableQuantity,
+        reservedQuantity: stock.reservedQuantity,
+      };
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
 }

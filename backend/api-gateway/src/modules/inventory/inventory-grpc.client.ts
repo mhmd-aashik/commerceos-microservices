@@ -5,6 +5,7 @@ import {
   InventoryGrpcService,
   CheckStockRequest,
   ReserveStockRequest,
+  InitializeStockRequest,
 } from './interfaces/inventory.interface.js';
 
 @Injectable()
@@ -30,6 +31,12 @@ export class InventoryGrpcClient implements OnModuleInit {
   async reserveStock(request: ReserveStockRequest) {
     return firstValueFrom(
       this.inventoryService.reserveStock(request).pipe(timeout(5000)),
+    );
+  }
+
+  async initializeStock(request: InitializeStockRequest) {
+    return firstValueFrom(
+      this.inventoryService.initializeStock(request).pipe(timeout(5000)),
     );
   }
 }

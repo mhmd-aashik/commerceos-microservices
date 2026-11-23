@@ -10,11 +10,14 @@ service InventoryService {
   rpc ReserveStock(ReserveStockRequest)
       returns (ReserveStockResponse);
 
-      rpc ReleaseStock(ReleaseStockRequest)
+  rpc ReleaseStock(ReleaseStockRequest)
     returns (StockOperationResponse);
 
-rpc ConfirmStock(ConfirmStockRequest)
+  rpc ConfirmStock(ConfirmStockRequest)
     returns (StockOperationResponse);
+
+  rpc InitializeStock(InitializeStockRequest)
+    returns (InitializeStockResponse);
 }
 
 message CheckStockRequest {
@@ -58,6 +61,19 @@ message ConfirmStockRequest {
 message StockOperationResponse {
  string reservation_id = 1;
  string status = 2;
+ int32 available_quantity = 3;
+ int32 reserved_quantity = 4;
+}
+
+
+message InitializeStockRequest {
+ string product_id = 1;
+ int32 initial_quantity = 2;
+}
+
+message InitializeStockResponse {
+ string inventory_id = 1;
+ string product_id = 2;
  int32 available_quantity = 3;
  int32 reserved_quantity = 4;
 }
