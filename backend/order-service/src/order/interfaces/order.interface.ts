@@ -25,4 +25,5 @@ export interface CreateOrderRequest {
 
 export interface GetOrderRequest {
   orderId: string;
+  userId: string;
 }

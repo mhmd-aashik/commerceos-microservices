@@ -27,7 +27,7 @@ export class OrderGrpcController {
   @GrpcMethod('OrderService', 'GetOrder')
   async getOrder(request: GetOrderRequest) {
     try {
-      return await this.orderService.getOrder(request.orderId);
+      return await this.orderService.getOrder(request.orderId, request.userId);
     } catch (error) {
       this.handleError(error);
     }

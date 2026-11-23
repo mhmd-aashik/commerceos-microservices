@@ -103,14 +103,14 @@ export class OrderService {
     });
   }
 
-  async getOrder(orderId: string) {
-    if (!isUUID(orderId)) {
-      throw new BadRequestException('Invalid order ID');
+  async getOrder(orderId: string, userId: string) {
+    if (!isUUID(orderId) || !isUUID(userId)) {
+      throw new BadRequestException('Invalid ID');
     }
 
     const order = await this.orderRepository.findById(orderId);
 
-    if (!order) {
+    if (!order || order.userId.toLowerCase() !== userId.toLowerCase()) {
       throw new NotFoundException('Order not found');
     }
 
