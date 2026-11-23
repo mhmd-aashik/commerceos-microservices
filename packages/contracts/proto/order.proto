@@ -26,8 +26,17 @@ message GetOrderRequest {
 }
 
 message OrderResponse {
-  string id = 1;
-  string user_id = 2;
-  string status = 3;
-  repeated OrderItem items = 4;
+ string id = 1;
+ string user_id = 2;
+ string status = 3;
+ repeated OrderItemResponse items = 4;
+ string total_amount = 5;
+ string currency = 6;
+}
+
+message OrderItemResponse {
+ string product_id = 1;
+ int32 quantity = 2;
+ string unit_price = 3;
+ string subtotal = 4;
 }

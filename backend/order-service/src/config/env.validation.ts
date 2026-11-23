@@ -6,4 +6,6 @@ export const envValidationSchema = Joi.object({
   GRPC_URL: Joi.string().required(),
 
   DATABASE_URL: Joi.string().required(),
+
+  PRODUCT_GRPC_URL: Joi.string().required(),
 });

@@ -14,3 +14,15 @@ export interface CreateOrderInput {
   currency: string;
   items: CreateOrderItemInput[];
 }
+
+export interface CreateOrderRequest {
+  userId: string;
+  items: {
+    productId: string;
+    quantity: number;
+  }[];
+}
+
+export interface GetOrderRequest {
+  orderId: string;
+}
