@@ -3,6 +3,7 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation.js';
+import { InventoryController } from './inventory.controller.js';
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { envValidationSchema } from './config/env.validation.js';
       validationSchema: envValidationSchema,
     }),
   ],
-  controllers: [AppController],
+  controllers: [AppController, InventoryController],
   providers: [AppService],
 })
 export class AppModule {}
