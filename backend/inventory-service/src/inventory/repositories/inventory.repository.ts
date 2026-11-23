@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { eq, and, sql } from 'drizzle-orm';
 
 import { DatabaseService } from '../../database/database.service.js';
@@ -91,5 +91,54 @@ export class InventoryRepository {
       .returning();
 
     return reservation;
+  }
+
+  async reserveStock(productId: string, orderId: string, quantity: number) {
+    return this.database.db.transaction(async (tx) => {
+      // 1. Atomically update available and reserved stock
+      const [stock] = await tx
+        .update(inventory)
+        .set({
+          availableQuantity: sql`
+          ${inventory.availableQuantity} - ${quantity}
+        `,
+          reservedQuantity: sql`
+          ${inventory.reservedQuantity} + ${quantity}
+        `,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(inventory.productId, productId),
+            sql`${inventory.availableQuantity} >= ${quantity}`,
+          ),
+        )
+        .returning();
+
+      if (!stock) {
+        throw new ConflictException('Product not found or insufficient stock');
+      }
+
+      // 2. Create the reservation in the SAME transaction
+      const [reservation] = await tx
+        .insert(inventoryReservations)
+        .values({
+          inventoryId: stock.id,
+          orderId,
+          quantity,
+          status: 'RESERVED',
+        })
+        .returning();
+
+      return {
+        reservationId: reservation.id,
+        productId: stock.productId,
+        orderId,
+        quantity,
+        availableQuantity: stock.availableQuantity,
+        reservedQuantity: stock.reservedQuantity,
+        status: reservation.status,
+      };
+    });
   }
 }
