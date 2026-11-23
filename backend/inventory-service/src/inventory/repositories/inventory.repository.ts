@@ -1,4 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { eq, and, sql } from 'drizzle-orm';
 
 import { DatabaseService } from '../../database/database.service.js';
@@ -138,6 +142,129 @@ export class InventoryRepository {
         availableQuantity: stock.availableQuantity,
         reservedQuantity: stock.reservedQuantity,
         status: reservation.status,
+      };
+    });
+  }
+
+  async releaseStock(reservationId: string) {
+    return this.database.db.transaction(async (tx) => {
+      // Lock the reservation until this transaction finishes
+      const [reservation] = await tx
+        .select()
+        .from(inventoryReservations)
+        .where(eq(inventoryReservations.id, reservationId))
+        .for('update');
+
+      if (!reservation) {
+        throw new NotFoundException('Reservation not found');
+      }
+
+      if (reservation.status !== 'RESERVED') {
+        throw new ConflictException(
+          `Cannot release a ${reservation.status} reservation`,
+        );
+      }
+
+      // Return the reserved quantity to available stock
+      const [stock] = await tx
+        .update(inventory)
+        .set({
+          availableQuantity: sql`
+          ${inventory.availableQuantity} + ${reservation.quantity}
+        `,
+          reservedQuantity: sql`
+          ${inventory.reservedQuantity} - ${reservation.quantity}
+        `,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(inventory.id, reservation.inventoryId),
+            sql`
+            ${inventory.reservedQuantity} >=
+            ${reservation.quantity}
+          `,
+          ),
+        )
+        .returning();
+
+      if (!stock) {
+        throw new ConflictException('Inventory stock is inconsistent');
+      }
+
+      // Mark the reservation as released
+      await tx
+        .update(inventoryReservations)
+        .set({
+          status: 'RELEASED',
+          updatedAt: new Date(),
+        })
+        .where(eq(inventoryReservations.id, reservationId));
+
+      return {
+        reservationId,
+        status: 'RELEASED',
+        availableQuantity: stock.availableQuantity,
+        reservedQuantity: stock.reservedQuantity,
+      };
+    });
+  }
+
+  async confirmStock(reservationId: string) {
+    return this.database.db.transaction(async (tx) => {
+      const [reservation] = await tx
+        .select()
+        .from(inventoryReservations)
+        .where(eq(inventoryReservations.id, reservationId))
+        .for('update');
+
+      if (!reservation) {
+        throw new NotFoundException('Reservation not found');
+      }
+
+      if (reservation.status !== 'RESERVED') {
+        throw new ConflictException(
+          `Cannot confirm a ${reservation.status} reservation`,
+        );
+      }
+
+      // Reserved units become permanently sold
+      const [stock] = await tx
+        .update(inventory)
+        .set({
+          reservedQuantity: sql`
+          ${inventory.reservedQuantity} - ${reservation.quantity}
+        `,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(inventory.id, reservation.inventoryId),
+            sql`
+            ${inventory.reservedQuantity} >=
+            ${reservation.quantity}
+          `,
+          ),
+        )
+        .returning();
+
+      if (!stock) {
+        throw new ConflictException('Inventory stock is inconsistent');
+      }
+
+      await tx
+        .update(inventoryReservations)
+        .set({
+          status: 'CONFIRMED',
+          updatedAt: new Date(),
+        })
+        .where(eq(inventoryReservations.id, reservationId));
+
+      return {
+        reservationId,
+        status: 'CONFIRMED',
+        availableQuantity: stock.availableQuantity,
+        reservedQuantity: stock.reservedQuantity,
       };
     });
   }

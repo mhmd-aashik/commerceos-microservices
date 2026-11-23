@@ -43,4 +43,25 @@ export class InventoryService {
       throw new BadRequestException('Quantity must be a positive integer');
     }
   }
+
+  async releaseStock(reservationId: string) {
+    this.validateReservationId(reservationId);
+
+    return this.inventoryRepository.releaseStock(reservationId);
+  }
+
+  async confirmStock(reservationId: string) {
+    this.validateReservationId(reservationId);
+
+    return this.inventoryRepository.confirmStock(reservationId);
+  }
+
+  private validateReservationId(reservationId: string): void {
+    const uuidPattern =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    if (!uuidPattern.test(reservationId ?? '')) {
+      throw new BadRequestException('A valid reservation ID is required');
+    }
+  }
 }
