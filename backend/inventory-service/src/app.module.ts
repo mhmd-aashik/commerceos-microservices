@@ -4,6 +4,7 @@ import { AppService } from './app.service.js';
 import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation.js';
 import { InventoryController } from './inventory.controller.js';
+import { DatabaseModule } from './database/database.module.js';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { InventoryController } from './inventory.controller.js';
       envFilePath: '.env',
       validationSchema: envValidationSchema,
     }),
+    DatabaseModule,
   ],
   controllers: [AppController, InventoryController],
   providers: [AppService],
