@@ -6,6 +6,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { envValidationSchema } from './config/env.validation.js';
 import configuration from './config/configuration.js';
 import { ProductsModule } from './modules/products/products.module.js';
+import { InventoryModule } from './modules/inventory/inventory.module.js';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ProductsModule } from './modules/products/products.module.js';
     }),
     AuthModule,
     ProductsModule,
+    InventoryModule
   ],
   controllers: [AppController],
   providers: [AppService],
